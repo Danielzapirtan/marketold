@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0">
+  <title>Manifold Markets · regex search · public quotes</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #f5f7fa;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 1.5rem;
+    }
+    .app-card {
+      max-width: 750px;
+      width: 100%;
+      background: white;
+      border-radius: 2.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+      padding: 2rem 2rem 2.2rem;
+      transition: all 0.2s;
+    }
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 1.9rem;
+      letter-spacing: -0.5px;
+      color: #1e293b;
+      margin-bottom: 0.3rem;
+    }
+    .subtitle {
+      color: #475569;
+      font-weight: 400;
+      margin-bottom: 1.8rem;
+      font-size: 1rem;
+      border-left: 4px solid #6366f1;
+      padding-left: 1rem;
+      background: #f8fafc;
+      border-radius: 0 12px 12px 0;
+    }
+    .search-box {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.7rem;
+      margin-bottom: 1.8rem;
+    }
+    .regex-input {
+      flex: 2;
+      min-width: 220px;
+      padding: 0.9rem 1.2rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 60px;
+      font-size: 1rem;
+      outline: none;
+      background: #ffffff;
+      transition: 0.2s;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      letter-spacing: 0.2px;
+    }
+    .regex-input:focus {
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.25);
+    }
+    .btn {
+      background: #18181b;
+      color: white;
+      border: none;
+      padding: 0.9rem 1.8rem;
+      border-radius: 60px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: 0.2s;
+      background: #1e293b;
+      letter-spacing: -0.2px;
+      white-space: nowrap;
+    }
+    .btn:hover {
+      background: #0f172a;
+      box-shadow: 0 8px 18px rgba(15,23,42,0.2);
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.4rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .count-badge {
+      background: #eef2ff;
+      color: #4338ca;
+      padding: 0.3rem 1rem;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+    }
+    .error-message {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 0.75rem 1.2rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      word-break: break-word;
+    }
+    .markets-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      max-height: 500px;
+      overflow-y: auto;
+      padding-right: 0.3rem;
+    }
+    .market-item {
+      background: #f9fafb;
+      border: 1px solid #e9eef2;
+      border-radius: 1.4rem;
+      padding: 1rem 1.3rem;
+      transition: 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .market-item:hover {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.04);
+    }
+    .market-title {
+      font-weight: 650;
+      font-size: 1.05rem;
+      color: #0f172a;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .market-details {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 1rem;
+      font-size: 0.85rem;
+      color: #334155;
+    }
+    .probability {
+      background: #dbeafe;
+      padding: 0.2rem 0.8rem;
+      border-radius: 24px;
+      font-weight: 600;
+      color: #1e40af;
+      display: inline-flex;
+      align-items: center;
+    }
+    .volume {
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+    .market-link {
+      margin-left: auto;
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      transition: 0.2s;
+    }
+    .market-link:hover {
+      color: #1d4ed8;
+      text-decoration: underline;
+    }
+    .empty-state {
+      text-align: center;
+      color: #64748b;
+      padding: 2rem;
+      background: #f1f5f9;
+      border-radius: 1.5rem;
+    }
+    .loader {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #334155;
+    }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #cbd5e1;
+      border-top: 2px solid #1e293b;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .inline-code {
+      background: #e2e8f0;
+      padding: 0.1rem 0.5rem;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+    @media (max-width: 500px) {
+      .app-card { padding: 1.5rem; }
+      .search-box { flex-direction: column; align-items: stretch; }
+      .btn { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-card">
+  <h1>
+    <span>📊</span> Manifold regex quotes
+  </h1>
+  <div class="subtitle">
+    Public API · no key needed · view-only market quotations
+  </div>
+
+  <div class="search-box">
+    <input type="text" id="regexInput" class="regex-input" placeholder="e.g. (climate|weather|CO₂)" value="(Trump|Biden|election)" autofocus>
+    <button id="searchBtn" class="btn">
+      <span>🔍</span> Search regex
+    </button>
+  </div>
+
+  <div id="statusArea" class="status-row">
+    <span class="count-badge" id="resultCount">⚡ ready</span>
+    <span style="font-size:0.85rem; color:#475569;" id="infoHint">matches market titles</span>
+  </div>
+
+  <div id="errorContainer" style="display: none;" class="error-message"></div>
+
+  <div id="marketsContainer" class="markets-list">
+    <div class="empty-state">✨ Enter a regular expression and search</div>
+  </div>
+  <div style="margin-top: 1rem; font-size:0.8rem; color:#64748b; text-align:center;">
+    Data from <strong>manifold.markets/api/v0/markets</strong> · quotations only
+  </div>
+</div>
+
+<script>
+  (function() {
+    const API_BASE = 'https://manifold.markets/api/v0/markets';
+    const MAX_LIMIT = 100;        // fetch up to 100 recent markets (public endpoint limit ~100)
+    const DEFAULT_REGEX = '(Trump|Biden|election)';
+
+    // DOM elements
+    const regexInput = document.getElementById('regexInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const marketsContainer = document.getElementById('marketsContainer');
+    const resultCount = document.getElementById('resultCount');
+    const errorContainer = document.getElementById('errorContainer');
+    const infoHint = document.getElementById('infoHint');
+
+    // State
+    let currentMarkets = [];          // all fetched markets
+    let currentRegex = null;
+    let isLoading = false;
+
+    // Utility: escape HTML to prevent XSS
+    function escapeHtml(text) {
+      if (!text) return '';
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Format probability: if between 0 and 1 treat as percentage
+    function formatProbability(prob) {
+      if (prob === undefined || prob === null) return '—';
+      const num = Number(prob);
+      if (isNaN(num)) return '—';
+      // manifold probability usually 0-1
+      return (num * 100).toFixed(1) + '%';
+    }
+
+    // Format volume (Mana)
+    function formatVolume(vol) {
+      if (vol === undefined || vol === null) return '—';
+      const num = Number(vol);
+      if (isNaN(num)) return '—';
+      if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'k';
+      }
+      return Math.round(num).toString();
+    }
+
+    // Build market URL from slug or id
+    function marketUrl(market) {
+      if (market.url) return market.url;
+      if (market.slug) return `https://manifold.markets/${market.slug}`;
+      return `https://manifold.markets/market/${market.id}`;
+    }
+
+    // Render markets into container
+    function renderMarkets(markets, regexPattern) {
+      marketsContainer.innerHTML = '';
+      if (!markets || markets.length === 0) {
+        marketsContainer.innerHTML = `<div class="empty-state">📭 No markets match regex <span class="inline-code">${escapeHtml(regexPattern)}</span></div>`;
+        resultCount.textContent = '0 markets';
+        return;
+      }
+
+      resultCount.textContent = `${markets.length} market${markets.length !== 1 ? 's' : ''}`;
+
+      markets.forEach(market => {
+        const title = market.question || market.title || 'Untitled market';
+        const probability = market.probability ?? market.p ?? null;
+        const volume = market.volume24Hours ?? market.volume ?? 0;
+        const url = marketUrl(market);
+
+        const item = document.createElement('div');
+        item.className = 'market-item';
+
+        item.innerHTML = `
+          <div class="market-title">${escapeHtml(title)}</div>
+          <div class="market-details">
+            <span class="probability">📈 ${escapeHtml(formatProbability(probability))}</span>
+            <span class="volume">💧 vol ${escapeHtml(formatVolume(volume))}</span>
+            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="market-link">
+              view market ↗
+            </a>
+          </div>
+        `;
+        marketsContainer.appendChild(item);
+      });
+    }
+
+    // Display error message
+    function showError(message) {
+      errorContainer.style.display = 'block';
+      errorContainer.textContent = message;
+    }
+
+    function clearError() {
+      errorContainer.style.display = 'none';
+      errorContainer.textContent = '';
+    }
+
+    // Show loading state
+    function setLoading(loading) {
+      isLoading = loading;
+      if (loading) {
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = `<span class="spinner"></span> loading...`;
+        infoHint.textContent = 'fetching public markets...';
+      } else {
+        searchBtn.disabled = false;
+        searchBtn.innerHTML = `<span>🔍</span> Search regex`;
+        infoHint.textContent = 'matches market titles';
+      }
+    }
+
+    // Fetch markets from Manifold API (no key)
+    async function fetchMarkets() {
+      clearError();
+      // Using limit parameter, manifold v0 returns up to 1000 but we keep 100 for speed.
+      const url = `${API_BASE}?limit=${MAX_LIMIT}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`API error ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      // The API returns an array directly for /v0/markets
+      if (!Array.isArray(data)) {
+        throw new Error('Unexpected API response format (expected array)');
+      }
+      return data;
+    }
+
+    // Apply regex filter on current markets (or fetch if needed)
+    async function applyRegex(pattern) {
+      if (!pattern || pattern.trim() === '') {
+        showError('Please enter a regular expression.');
+        marketsContainer.innerHTML = `<div class="empty-state">⏳ Enter a regex pattern</div>`;
+        resultCount.textContent = '0 markets';
+        return;
+      }
+
+      let regex;
+      try {
+        regex = new RegExp(pattern, 'i'); // case-insensitive
+      } catch (e) {
+        showError(`Invalid regex: ${e.message}`);
+        marketsContainer.innerHTML = `<div class="empty-state">⚠️ Invalid expression</div>`;
+        resultCount.textContent = 'error';
+        return;
+      }
+
+      // If we already have markets, filter locally; else fetch fresh data.
+      if (currentMarkets.length === 0) {
+        // Need to fetch
+        setLoading(true);
+        try {
+          currentMarkets = await fetchMarkets();
+        } catch (err) {
+          showError(`Failed to load markets: ${err.message}`);
+          setLoading(false);
+          marketsContainer.innerHTML = `<div class="empty-state">🚫 Unable to reach Manifold API</div>`;
+          resultCount.textContent = 'error';
+          return;
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      // Filter by question/title
+      const filtered = currentMarkets.filter(market => {
+        const text = market.question || market.title || '';
+        return regex.test(text);
+      });
+
+      currentRegex = pattern;
+      renderMarkets(filtered, pattern);
+    }
+
+    // Refresh markets from API (clear cache) and re-apply current regex if any
+    async function refreshAndSearch() {
+      setLoading(true);
+      try {
+        currentMarkets = await fetchMarkets();
+        const pattern = regexInput.value.trim();
+        if (pattern) {
+          await applyRegex(pattern);
+        } else {
+          // if no pattern, show all markets (or suggest)
+          if (currentMarkets.length > 0) {
+            renderMarkets(currentMarkets, '(all)');
+            resultCount.textContent = `${currentMarkets.length} markets (no filter)`;
+          } else {
+            marketsContainer.innerHTML = `<div class="empty-state">📋 No markets returned</div>`;
+          }
+        }
+      } catch (err) {
+        showError(`Refresh failed: ${err.message}`);
+        setLoading(false);
+        marketsContainer.innerHTML = `<div class="empty-state">❌ API error</div>`;
+        resultCount.textContent = 'error';
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Event handlers
+    searchBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const pattern = regexInput.value.trim();
+      if (!pattern) {
+        showError('Enter a regex to search market titles.');
+        return;
+      }
+      // If we have no cached markets or user wants fresh data, fetch.
+      if (currentMarkets.length === 0) {
+        await applyRegex(pattern);
+      } else {
+        // Apply filter on existing data (quick local search)
+        await applyRegex(pattern);
+      }
+    });
+
+    // Allow Enter key in input
+    regexInput.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchBtn.click();
+      }
+    });
+
+    // Initial load: fetch markets once and apply default regex
+    async function initialLoad() {
+      regexInput.value = DEFAULT_REGEX;
+      setLoading(true);
+      try {
+        currentMarkets = await fetchMarkets();
+        // Apply default regex
+        await applyRegex(DEFAULT_REGEX);
+      } catch (err) {
+        showError(`Initial load error: ${err.message}`);
+        marketsContainer.innerHTML = `<div class="empty-state">⚠️ Could not connect to Manifold. Check connection.</div>`;
+        resultCount.textContent = 'offline';
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Optional: manual refresh button? We add a small refresh action near title maybe.
+    // But we can reuse search. Add a tiny refresh icon next to count?
+    // We'll attach a click listener on resultCount for refresh (hidden feature).
+    resultCount.addEventListener('click', async () => {
+      if (isLoading) return;
+      // Double-click like refresh: fetch fresh data and reapply regex
+      await refreshAndSearch();
+    });
+    resultCount.style.cursor = 'pointer';
+    resultCount.title = 'Click to refresh markets from API';
+
+    // Start
+    initialLoad();
+  })();
+</script>
+</body>
+</html>
