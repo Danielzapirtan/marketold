@@ -255,14 +255,14 @@
     <div class="empty-state">✨ Enter a regular expression and search</div>
   </div>
   <div style="margin-top: 1rem; font-size:0.8rem; color:#64748b; text-align:center;">
-    Data from <strong>manifold.markets/api/v0/markets</strong> · quotations only
+    Data from <strong>api.manifold.markets/v0/markets</strong> · quotations onl
   </div>
 </div>
 
 <script>
   (function() {
     const API_BASE = 'https://api.manifold.markets/v0/markets';
-    const MAX_LIMIT = 100;        // fetch up to 100 recent markets (public endpoint limit ~100)
+    const MAX_LIMIT = 1000;        // fetch up to 100 recent markets (public endpoint limit ~100)
     const DEFAULT_REGEX = '(Trump|Biden|election)';
 
     // DOM elements
